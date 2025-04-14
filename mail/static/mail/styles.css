@@ -1,3 +1,22 @@
 textarea {
     min-height: 400px;
 }
+#emails-view div.row {
+    border: 1px solid lightgray;
+    padding: 7px;
+    cursor: pointer;
+}
+#emails-view div.read {
+    background-color: #d3d3d369;
+}
+#emails-view div.row:hover {
+    background-color: #e5af6838!important;
+}
+#emails-view div.row div:nth-child(2){
+    white-space: nowrap;
+    overflow: hidden;
+}
+#emails-view div.row div:nth-child(3) {
+    text-align: right;
+}
+
