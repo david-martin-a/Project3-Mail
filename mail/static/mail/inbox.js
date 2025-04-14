@@ -25,32 +25,63 @@ function compose_email() {
 }
 
 function save_email() {
-  alert("Hi!");
+  //let x = document.forms["compose-form"];
+  var form = new FormData(document.getElementById("compose-form"));
+  //var subj = x["compose-form"];
+  console.log(form);
+  
+/*   fetch('/emails', {
+    method: 'POST',
+    body: JSON.stringify({
+        recipients: 'baz@example.com',
+        subject: 'Meeting time',
+        body: 'How about we meet tomorrow at 3pm?'
+    })
+  })
+  .then(response => response.json())
+  .then(result => {
+      // Print result
+      console.log(result);
+  }); */
+
+  
 }
 
 function show_email(id) {
-  // Show the display-email-view and hide other views to display a single email
+  // Show the display-email-view to display a single email and hide other views
   document.querySelector('#display-email-view').style.display = 'block';
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'none';
+  // parse WHICH mailbox this email is being opened from (to know whether or not to display archive/unarchive button)
+  let emails_container = document.getElementById('emails-view');
+  let mailbox = emails_container.dataset.mailbox;
+  //console.log(mailbox);
+  
   let error_msg = "";
   fetch('/emails/' + id)
     .then(response => response.json())
     .then(email => {
       // TO DO : check if nothing returned, check if user allowed to see this email
-      console.log(email);
-      if (email.error) {
-        error_msg = email.error;
-      }
-
+      console.log(email);      
+      error_msg = email.error;  
       theDiv = document.getElementById('display-email-view');
+      // clear out any previous HTML from the page
       theDiv.innerHTML = "" ;
       let y = document.createElement("DIV");
       y.innerHTML = "<b>From: </b>" + email.sender;
       theDiv.appendChild(y);
       let y1 = document.createElement("DIV");
-      // TO DO: show ALL recipients, not only first one
-      y1.innerHTML = "<b>To: </b>" + email.recipients[0];
+
+      // Show ALL recipients, not only the first one
+      l = "";
+      for (let i = 0; i < email.recipients.length; i++) {
+        l = l + email.recipients[i] + ', ';
+      }
+      // Remove the last comma and space from list of recipients
+      l = l.slice(0, l.length - 2);
+      
+      y1.innerHTML = "<b>To: </b>" + l;
+
       theDiv.appendChild(y1);
       let y2 = document.createElement("DIV");
       y2.innerHTML = "<b>Subject: </b>" + email.subject;
@@ -58,19 +89,36 @@ function show_email(id) {
       let y3 = document.createElement("DIV");
       y3.innerHTML = "<b>Timestamp: </b>" + email.timestamp;
       theDiv.appendChild(y3);
-      let y4 = document.createElement("DIV");
-      //y4.innerHTML = "<b>Subject: </b>" + email.subject;
-      let y5 = document.createElement("button");
-      y5.innerHTML = "Reply";
-      y5.setAttribute("class", "btn btn-sm btn-outline-primary");
-      y5.setAttribute("id", "reply");
-      y4.appendChild(y5);
-      theDiv.appendChild(y4);
-      let y6 = document.createElement("hr");
-      theDiv.appendChild(y6);
-      let y7 = document.createElement("div");
-      y7.innerHTML = email.body;
+
+      if (mailbox != "sent") {
+        let y4 = document.createElement("DIV");
+        let y6 = document.createElement("button");
+        y6.setAttribute("class", "btn btn-sm btn-outline-primary");
+        y6.setAttribute("id", "archive");
+        if (mailbox == "inbox") {
+          let y5 = document.createElement("button");          
+          y5.setAttribute("class", "btn btn-sm btn-outline-primary");
+          y5.setAttribute("id", "reply");
+          y5.innerHTML = "Reply";
+          y4.appendChild(y5);
+          y6.setAttribute("onclick", "archive(1, " + email.id + ");");          
+          y6.innerHTML = "Archive";
+          y4.appendChild(y6);
+        }
+        if (mailbox == "archive"){
+          y6.setAttribute("onclick", "archive(0, " + email.id + ");");
+          y6.innerHTML = "Unarchive";
+          y4.appendChild(y6);
+          
+        }
+        theDiv.appendChild(y4);
+      }
+
+      let y7 = document.createElement("hr");
       theDiv.appendChild(y7);
+      let y8 = document.createElement("div");
+      y8.innerHTML = email.body;
+      theDiv.appendChild(y8);
 
     })
     .catch(() => {
@@ -80,8 +128,13 @@ function show_email(id) {
       document.querySelector('#compose-view').style.display = 'none';
       //alert(error_msg);
     });
-
-
+    // Finally, mark this email as read
+    fetch('/emails/' + id, {
+      method: 'PUT',
+      body: JSON.stringify({
+          read: true
+      })
+    })
   
 }
 
@@ -94,15 +147,17 @@ function load_mailbox(mailbox) {
 
   // Show the mailbox name
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
-  // get emails and print them to the console initially
-  if(mailbox == "inbox"){
-    // Get all emails TO this user that are not archived    
-    // alert('mailbox');
-    fetch('/emails/inbox')
+    
+    // Mark the page of emails with an indication of WHICH mailbox it is (inbox, archive, sent), to be used when opening an individual email
+    let theDiv = document.getElementById('emails-view');
+    theDiv.setAttribute("data-mailbox", mailbox);
+
+    // get emails and insert them into the page
+    fetch('/emails/' + mailbox)
       .then(response => response.json())
       .then(emails => {
           // Print emails
-          console.log(emails);          
+          //console.log(emails);          
 
           // Create a DOM DIV element for each email and give it a bootstrap "row" class
           // Each row should have a column (i.e. cell) for 1) Sender, 2) Subject of message, 3) Timestamp
@@ -113,7 +168,9 @@ function load_mailbox(mailbox) {
 
             let y = document.createElement("DIV");
             y.setAttribute("class", "row");
-            y.setAttribute("onclick", "show_email(" + emails[i].id + ");")
+            y.setAttribute("onclick", "show_email(" + emails[i].id + ");");
+
+
 
             // Display emails that have been read with grey background
             if (emails[i].read) {
@@ -132,10 +189,21 @@ function load_mailbox(mailbox) {
             z2.setAttribute("class", "col-md-3");
             z2.innerHTML = emails[i].timestamp; 
             z1.after(z2);
-            theDiv = document.getElementById('emails-view');
+            let theDiv = document.getElementById('emails-view');
             theDiv.appendChild(y);  
           }
     }); 
-  }
+  
+}
+
+async function archive(state, id){
+  await fetch('/emails/' + id, {
+    method: 'PUT',
+    body: JSON.stringify({
+        archived: state
+    })
+  });
+  // Needed to await fetch result, otherwise the inbox displayed may be stale (not showing email just unarchived)
+  load_mailbox("inbox");
 }
 

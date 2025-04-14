@@ -19,4 +19,9 @@ textarea {
 #emails-view div.row div:nth-child(3) {
     text-align: right;
 }
-
+#display-email-view div {
+    margin-bottom: 9px;
+}
+#display-email-view button {
+    margin-right: 5px;
+}
