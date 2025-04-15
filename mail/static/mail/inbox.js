@@ -4,14 +4,14 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#inbox').addEventListener('click', () => load_mailbox('inbox'));
   document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
-  document.querySelector('#compose').addEventListener('click', compose_email);
+  document.querySelector('#compose').addEventListener('click', () => compose_email(0));
   document.querySelector('#submit1').addEventListener('click', () => save_email());
   
   // By default, load the inbox
   load_mailbox('inbox');
 });
 
-function compose_email() {
+function compose_email(id) {
 
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
@@ -22,40 +22,61 @@ function compose_email() {
   document.querySelector('#compose-recipients').value = '';
   document.querySelector('#compose-subject').value = '';
   document.querySelector('#compose-body').value = '';
+
+  // For a new email, the default id when calling this function will be 0
+  // If this is a **reply** to an email, the id will be something > 0, and we must prefill the appropriate fields  
+  if (id > 0) {
+    //alert(id);
+    fetch('/emails/' + id)
+      .then(response => response.json())
+      .then(email => {
+        document.querySelector('#compose-recipients').value = email.sender;
+        subj = email.subject;
+        if (subj.slice(0, 4) != "Re: ") {
+          subj = "Re: " + subj;
+        }
+        document.querySelector('#compose-subject').value = subj;
+        body = "On " + email.timestamp + " " + email.sender + " wrote: \n\n" + email.body;
+        document.querySelector('#compose-body').value = body;
+      });
+  }
+
 }
 
 function save_email() {
-  //let x = document.forms["compose-form"];
-  var form = new FormData(document.getElementById("compose-form"));
-  //var subj = x["compose-form"];
-  console.log(form);
   
-/*   fetch('/emails', {
+  const to = document.getElementById("compose-recipients").value;
+  const subj = document.getElementById("compose-subject").value;
+  let body = document.getElementById("compose-body").value;    
+  
+  fetch('/emails', {
     method: 'POST',
     body: JSON.stringify({
-        recipients: 'baz@example.com',
-        subject: 'Meeting time',
-        body: 'How about we meet tomorrow at 3pm?'
+        recipients: to,
+        subject: subj,
+        body: body,
+        read: 0
     })
   })
   .then(response => response.json())
   .then(result => {
       // Print result
       console.log(result);
-  }); */
-
-  
+      // Go to Sent mailbox
+      load_mailbox('sent');
+  });  
 }
 
 function show_email(id) {
+
   // Show the display-email-view to display a single email and hide other views
   document.querySelector('#display-email-view').style.display = 'block';
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'none';
-  // parse WHICH mailbox this email is being opened from (to know whether or not to display archive/unarchive button)
+
+  // parse WHICH mailbox this email is being opened FROM (to know whether or not to display archive/unarchive and reply buttons)
   let emails_container = document.getElementById('emails-view');
-  let mailbox = emails_container.dataset.mailbox;
-  //console.log(mailbox);
+  let mailbox = emails_container.dataset.mailbox;  
   
   let error_msg = "";
   fetch('/emails/' + id)
@@ -99,6 +120,7 @@ function show_email(id) {
           let y5 = document.createElement("button");          
           y5.setAttribute("class", "btn btn-sm btn-outline-primary");
           y5.setAttribute("id", "reply");
+          y5.setAttribute("onclick", "compose_email(" + email.id + ");");
           y5.innerHTML = "Reply";
           y4.appendChild(y5);
           y6.setAttribute("onclick", "archive(1, " + email.id + ");");          
@@ -117,7 +139,10 @@ function show_email(id) {
       let y7 = document.createElement("hr");
       theDiv.appendChild(y7);
       let y8 = document.createElement("div");
-      y8.innerHTML = email.body;
+      b = email.body;
+      // New lines in email body are ignored unless the following line is used:
+      b = b.replace(/(?:\r\n|\r|\n)/g, '<br>');
+      y8.innerHTML = b;
       theDiv.appendChild(y8);
 
     })
@@ -162,34 +187,51 @@ function load_mailbox(mailbox) {
           // Create a DOM DIV element for each email and give it a bootstrap "row" class
           // Each row should have a column (i.e. cell) for 1) Sender, 2) Subject of message, 3) Timestamp
           // Each row should have the email id embedded and be clickable
+          let theDiv = document.getElementById('emails-view');
+          let x = document.createElement("div");
+          x.setAttribute("class", "row alert-primary");
+          x.setAttribute("id", "header");
+          if (mailbox == "sent") {
+            x.innerHTML = '<div class="col-md-4">Recipient(s)</div><div  class="col-md-5">Subject</div><div class="col-md-3">Timestamp</div>';
+          }
+          else {
+            x.innerHTML = '<div class="col-md-4">Sender</div><div  class="col-md-5">Subject</div><div class="col-md-3">Timestamp</div>';
+          }
           
+          theDiv.appendChild(x);
 
           for (let i = 0; i < emails.length; i++) {                    
 
-            let y = document.createElement("DIV");
-            y.setAttribute("class", "row");
+            let y = document.createElement("div");
+            y.setAttribute("class", "row email");
             y.setAttribute("onclick", "show_email(" + emails[i].id + ");");
-
-
 
             // Display emails that have been read with grey background
             if (emails[i].read) {
-              y.setAttribute("class", "row read");
+              y.setAttribute("class", "row email read");
             }
 
-            let z = document.createElement("DIV");
-            z.setAttribute("class", "col-md-3");
-            z.innerHTML = emails[i].sender; 
+            let z = document.createElement("div");
+            z.setAttribute("class", "col-md-4");
+            if (mailbox == "sent") {
+              e = emails[i].recipients.toString(); 
+              e = e.replace(",", ", ");
+              z.innerHTML = e;             
+            }
+            else {              
+              z.innerHTML = emails[i].sender;
+            }
+        
             y.appendChild(z);
-            let z1 = document.createElement("DIV");
-            z1.setAttribute("class", "col-md-6");
+            let z1 = document.createElement("div");
+            z1.setAttribute("class", "col-md-5");
             z1.innerHTML = emails[i].subject; 
             z.after(z1);
-            let z2 = document.createElement("DIV");
+            let z2 = document.createElement("div");
             z2.setAttribute("class", "col-md-3");
             z2.innerHTML = emails[i].timestamp; 
             z1.after(z2);
-            let theDiv = document.getElementById('emails-view');
+            //let theDiv = document.getElementById('emails-view');
             theDiv.appendChild(y);  
           }
     }); 

@@ -64,6 +64,7 @@ def compose(request):
             body=body,
             read=user == request.user
         )
+        # the statement "read=user == request.user" above will evaluate to True if user(the recipient) is the person sending the email, otherwise evaluates to false
         email.save()
         for recipient in recipients:
             email.recipients.add(recipient)

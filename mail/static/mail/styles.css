@@ -1,6 +1,20 @@
 textarea {
     min-height: 400px;
 }
+hr {
+    border-top-width: 3px;
+}
+#header:hover {    
+    background-color: #cce5ff;
+    cursor: default!important;
+}
+.alert-primary div {
+    font-weight: 700;
+}
+.alert-primary div:nth-child(2) {
+    border-left: 1px solid gray;
+    border-right: 1px solid gray;
+}
 #emails-view div.row {
     border: 1px solid lightgray;
     padding: 7px;
@@ -9,7 +23,7 @@ textarea {
 #emails-view div.read {
     background-color: #d3d3d369;
 }
-#emails-view div.row:hover {
+#emails-view div.email:hover {
     background-color: #e5af6838!important;
 }
 #emails-view div.row div:nth-child(2){
@@ -17,11 +31,19 @@ textarea {
     overflow: hidden;
 }
 #emails-view div.row div:nth-child(3) {
-    text-align: right;
+    text-align: center;
 }
 #display-email-view div {
     margin-bottom: 9px;
 }
 #display-email-view button {
     margin-right: 5px;
+}
+#compose-view textarea.form-control {
+    margin-bottom: 1rem;
+}
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1340px;
+    }
 }
