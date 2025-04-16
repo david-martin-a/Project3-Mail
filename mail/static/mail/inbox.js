@@ -85,39 +85,34 @@ function show_email(id) {
       // TO DO : check if nothing returned, check if user allowed to see this email
       console.log(email);      
       error_msg = email.error;  
-      theDiv = document.getElementById('display-email-view');
+      const theDiv = document.getElementById('display-email-view');
       // clear out any previous HTML from the page
       theDiv.innerHTML = "" ;
-      let y = document.createElement("DIV");
+      const y = document.createElement("DIV");
       y.innerHTML = "<b>From: </b>" + email.sender;
       theDiv.appendChild(y);
-      let y1 = document.createElement("DIV");
+      const y1 = document.createElement("DIV");
 
       // Show ALL recipients, not only the first one
-      l = "";
-      for (let i = 0; i < email.recipients.length; i++) {
-        l = l + email.recipients[i] + ', ';
-      }
-      // Remove the last comma and space from list of recipients
-      l = l.slice(0, l.length - 2);
-      
-      y1.innerHTML = "<b>To: </b>" + l;
+      let recipients = email.recipients.toString();
+      recipients = recipients.replace(",", ", "); 
+      y1.innerHTML = "<b>To: </b>" + recipients;
 
       theDiv.appendChild(y1);
-      let y2 = document.createElement("DIV");
+      const y2 = document.createElement("DIV");
       y2.innerHTML = "<b>Subject: </b>" + email.subject;
       theDiv.appendChild(y2);
-      let y3 = document.createElement("DIV");
+      const y3 = document.createElement("DIV");
       y3.innerHTML = "<b>Timestamp: </b>" + email.timestamp;
       theDiv.appendChild(y3);
 
       if (mailbox != "sent") {
-        let y4 = document.createElement("DIV");
-        let y6 = document.createElement("button");
+        const y4 = document.createElement("DIV");
+        const y6 = document.createElement("button");
         y6.setAttribute("class", "btn btn-sm btn-outline-primary");
         y6.setAttribute("id", "archive");
         if (mailbox == "inbox") {
-          let y5 = document.createElement("button");          
+          const y5 = document.createElement("button");          
           y5.setAttribute("class", "btn btn-sm btn-outline-primary");
           y5.setAttribute("id", "reply");
           y5.setAttribute("onclick", "compose_email(" + email.id + ");");
@@ -127,20 +122,19 @@ function show_email(id) {
           y6.innerHTML = "Archive";
           y4.appendChild(y6);
         }
-        if (mailbox == "archive"){
+        else if (mailbox == "archive"){
           y6.setAttribute("onclick", "archive(0, " + email.id + ");");
           y6.innerHTML = "Unarchive";
-          y4.appendChild(y6);
-          
+          y4.appendChild(y6);          
         }
         theDiv.appendChild(y4);
       }
 
-      let y7 = document.createElement("hr");
+      const y7 = document.createElement("hr");
       theDiv.appendChild(y7);
-      let y8 = document.createElement("div");
-      b = email.body;
-      // New lines in email body are ignored unless the following line is used:
+      const y8 = document.createElement("div");
+      let b = email.body;
+      // New lines in email body are ignored unless the \n escape sequences are replaced with "<br>":
       b = b.replace(/(?:\r\n|\r|\n)/g, '<br>');
       y8.innerHTML = b;
       theDiv.appendChild(y8);
@@ -157,7 +151,7 @@ function show_email(id) {
     fetch('/emails/' + id, {
       method: 'PUT',
       body: JSON.stringify({
-          read: true
+          read: 1
       })
     })
   

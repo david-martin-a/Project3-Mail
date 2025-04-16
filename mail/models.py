@@ -27,3 +27,6 @@ class Email(models.Model):
             "read": self.read,
             "archived": self.archived
         }
+    def __str__(self):
+        t = self.timestamp.strftime("%d %b %Y")
+        return f"{self.id}: {self.sender} sent '{self.subject}' on {t}"
